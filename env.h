@@ -1,0 +1,63 @@
+#ifndef ENV
+
+#define TS 0.005f 
+#define TS_thread 5ms  // Encoder-Abtastzeit
+
+
+#define PWMFREQUENZ 50000
+
+
+#define PI 3.14159265359 
+#define GEAR_1 15.5833
+#define GEAR_2 15.5844
+
+#define D_PULLEY 14.55
+
+
+#define TEMP_THRESHOLD_O 50.0f
+#define TEMP_THRESHOLD_U 40.0f
+#define TEMP_THRESHOLD_EMERGENCY 80.0f
+
+
+#define ACCELERATION_THRESHOLD_XY 1.5 
+#define ACCELERATION_THRESHOLD_Z 10.0 
+
+
+
+
+#define TICKS_PER_REVOLUTION 1024
+
+
+#define MIN_VOLTAGE 11.0
+
+
+//M1
+// velocity_controller;
+#define M1_V_KP 0.51254
+#define M1_V_KI 5.0451
+#define M1_V_KD 0.0
+
+// position_controller;
+#define M1_P_KP 50.0
+#define M1_P_KI 0
+#define M1_P_KD 0.0
+
+//M2
+// velocity_controller;
+#define M2_V_KP 0.51254
+#define M2_V_KI 5.0451
+#define M2_V_KD 0.0
+
+// position_controller;
+#define M2_P_KP 50.0
+#define M2_P_KI 0.0
+#define M2_P_KD 0.0
+
+#define INIT_SPEED 15.0f
+#define POS_ZERO_X 61.50
+#define POS_ZERO_Y -65.188
+
+#define  R_S  445.71
+
+
+#endif // ENV
