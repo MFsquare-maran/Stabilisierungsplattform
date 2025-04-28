@@ -45,7 +45,7 @@ Thread temperatur_thread(osPriorityRealtime);
 
 */
 
-bool stabilisierung = true;
+bool stabilisierung = false;
 
 float M1_temp = 0.0;
 float M2_temp = 0.0;
@@ -101,10 +101,19 @@ void realtime_task() {
 
         if( stabilisierung == true )
         {
-            float phi_x = atan(Stabilisierungsplattform.get_IMU1_Ax() / Stabilisierungsplattform.get_IMU1_Az());
-            float phi_y = atan(Stabilisierungsplattform.get_IMU1_Ay() / Stabilisierungsplattform.get_IMU1_Az());
+            float phi_x = atan(Stabilisierungsplattform.get_IMU1_Ax() / 9.81);
+            float phi_y = atan(Stabilisierungsplattform.get_IMU1_Ay() / 9.81);
 
-            Stabilisierungsplattform.set_position(Filter_X.filter(R_S * sin(phi_x)), Filter_Y.filter(R_S * sin(phi_y)),1000.0);
+            float pos_x = Filter_X.filter(R_S * sin(phi_x));
+            float pos_y = Filter_Y.filter(R_S * sin(phi_y));
+
+            if(pos_x >= X_MAX){pos_x = X_MAX;}
+            if(pos_x <= X_MIN){pos_x = X_MIN;}
+            if(pos_y >= Y_MAX){pos_y = Y_MAX;}
+            if(pos_y <= Y_MIN){pos_y = Y_MIN;}
+
+
+            Stabilisierungsplattform.set_position(-pos_x, -pos_y,1000.0);
         
         }
                 
@@ -282,7 +291,7 @@ void StateMachine_task() {
                 
         }
 
-        ThisThread::sleep_for(100ms);
+        ThisThread::sleep_for(10ms);
     }
 }
 // Funktion für den Realtime-Thread
@@ -323,8 +332,8 @@ int main() {
     
     Filter_Y.setPeriod(TS);
     Filter_X.setPeriod(TS);
-    Filter_Y.setFrequency(50.0);
-    Filter_X.setFrequency(50.0);
+    Filter_Y.setFrequency(30.0);
+    Filter_X.setFrequency(30.0);
     
 
     print_thread.start(print_task);

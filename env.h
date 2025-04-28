@@ -57,6 +57,12 @@
 #define POS_ZERO_X 61.50
 #define POS_ZERO_Y -65.188
 
+
+#define X_MAX 55
+#define X_MIN -55.0
+#define Y_MAX 55.0
+#define Y_MIN -55.0
+
 #define  R_S  445.71
 
 
