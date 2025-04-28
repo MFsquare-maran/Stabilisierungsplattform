@@ -332,8 +332,8 @@ int main() {
     
     Filter_Y.setPeriod(TS);
     Filter_X.setPeriod(TS);
-    Filter_Y.setFrequency(30.0);
-    Filter_X.setFrequency(30.0);
+    Filter_Y.setFrequency(7.0);
+    Filter_X.setFrequency(7.0);
     
 
     print_thread.start(print_task);
