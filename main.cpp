@@ -283,7 +283,7 @@ void StateMachine_task() {
                 
                 Home_sequenz();
 
-                /*
+                
                 if (process == home && abs(Stabilisierungsplattform.get_position_mm(0) - POS_ZERO_X) <= 0.5f && abs(Stabilisierungsplattform.get_position_mm(1) - POS_ZERO_Y) <= 0.5f)
                 {
 
@@ -296,7 +296,7 @@ void StateMachine_task() {
                     
                 }
 
-                */
+                
                 break;
 
             case RUN_MODE:
@@ -398,10 +398,11 @@ void print_task() {
         printf("AY_2 = %f\n", ay_IMU2_f);
         printf("AZ_2 = %f\n", az_IMU2_f);
         printf("######################\n");
-/*      
+    
 
         printf("t1 =  %f\n", M1_temp);
         printf("t2 =  %f\n", M2_temp);
+/*  
         printf("pos M1 = %f mm\n", Stabilisierungsplattform.M1_get_mm());
         printf("pos M2 = %f mm\n", Stabilisierungsplattform.M2_get_mm());
         printf("pos X = %f mm\n", Stabilisierungsplattform.get_position_mm(0));
