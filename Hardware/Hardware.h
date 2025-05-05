@@ -20,7 +20,8 @@ public:
     Hardware(float ts = TS);
     ~Hardware();
 
-    void update();
+    void update_1();
+    void update_2();
 
     void reset();
 

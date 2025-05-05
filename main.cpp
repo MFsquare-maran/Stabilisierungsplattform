@@ -2,6 +2,7 @@
 #include "env.h"
 #include "Hardware.h"
 #include <cmath> // für fabsf()
+#include <cstdint>
 #include "LowpassFilter.h"
 
 BufferedSerial pc(USBTX, USBRX, 115200);  // USB-Serielle Schnittstelle
@@ -12,6 +13,8 @@ Hardware Stabilisierungsplattform(TS);
 
 LowpassFilter Filter_X;
 LowpassFilter Filter_Y;
+LowpassFilter Filter_T1;
+LowpassFilter Filter_T2;
 
 
 
@@ -27,8 +30,7 @@ enum State {
 State state;
 
 enum Process {
-    y1,
-    y2,
+    y,
     x,
     home
 };
@@ -39,53 +41,65 @@ Process process;
 Thread realtime_thread(200);
 Thread print_thread(osPriorityLow);
 Thread statemachine_thread(osPriorityNormal);
-/*
+Thread temperatur_thread(osPriorityNormal);
 
-Thread temperatur_thread(osPriorityRealtime);
-
-*/
 
 bool stabilisierung = false;
 
 float M1_temp = 0.0;
 float M2_temp = 0.0;
 
+float ax_f = 0.0;
+float ay_f = 0.0;
+float ax_f_old = 0.0;
+float ay_f_old = 0.0;
+
+uint32_t cnt_stabilisierung_aus = 0;
+
 void temperature_task()
 {
-     printf("TEMP");
-    M1_temp =  Stabilisierungsplattform.M1_get_temperature();
+    while(true)
+    {
 
-    M2_temp =  Stabilisierungsplattform.M2_get_temperature();
+        M1_temp =  Filter_T1.filter(Stabilisierungsplattform.M1_get_temperature()); 
+
+        M2_temp =  Filter_T2.filter(Stabilisierungsplattform.M2_get_temperature());
+
+        
+
+        if(M1_temp > TEMP_THRESHOLD_O)
+        {
+            Stabilisierungsplattform.Fan_M1 = 1;
+            
+        }
+
+        if(M1_temp < TEMP_THRESHOLD_U)
+        {
+            Stabilisierungsplattform.Fan_M1 = 0;
+            
+        }
+
+    if(M2_temp > TEMP_THRESHOLD_O)
+        {
+            Stabilisierungsplattform.Fan_M2 = 1;
+            
+        }
+
+        if(M2_temp < TEMP_THRESHOLD_U)
+        {
+            Stabilisierungsplattform.Fan_M2 = 0;
+            
+        }
 
     
 
-    if(M1_temp > TEMP_THRESHOLD_O)
-    {
-        Stabilisierungsplattform.Fan_M1 = 1;
-        
-    }
 
-    if(M1_temp < TEMP_THRESHOLD_U)
-    {
-        Stabilisierungsplattform.Fan_M1 = 0;
         
-    }
+        ThisThread::sleep_for(TS_thread_Temp);
 
-   if(M2_temp > TEMP_THRESHOLD_O)
-    {
-        Stabilisierungsplattform.Fan_M2 = 1;
-        
     }
-
-    if(M2_temp < TEMP_THRESHOLD_U)
-    {
-        Stabilisierungsplattform.Fan_M2 = 0;
-        
-    }
-
 
     
-    ThisThread::sleep_for(5000ms);
     
 }
 
@@ -97,15 +111,23 @@ void realtime_task() {
 
 
 
-        Stabilisierungsplattform.update();
+        Stabilisierungsplattform.update_1();
+
+        if(state != SLEEPMODE)
+        {
+            Stabilisierungsplattform.update_2();
+        }
+
+        ax_f = Filter_X.filter(Stabilisierungsplattform.get_IMU1_Ax());
+        ay_f = Filter_Y.filter(Stabilisierungsplattform.get_IMU1_Ay());
 
         if( stabilisierung == true )
         {
-            float phi_x = atan(Stabilisierungsplattform.get_IMU1_Ax() / 9.81);
-            float phi_y = atan(Stabilisierungsplattform.get_IMU1_Ay() / 9.81);
+            float phi_x = atan(ax_f / 9.81);
+            float phi_y = atan(ay_f / 9.81);
 
-            float pos_x = Filter_X.filter(R_S * sin(phi_x));
-            float pos_y = Filter_Y.filter(R_S * sin(phi_y));
+            float pos_x = R_S * sin(phi_x);
+            float pos_y = R_S * sin(phi_y);
 
             if(pos_x >= X_MAX){pos_x = X_MAX;}
             if(pos_x <= X_MIN){pos_x = X_MIN;}
@@ -127,7 +149,7 @@ void Home_sequenz()
 {
      switch (process) {
 
-        case y1:
+        case y:
 
         Stabilisierungsplattform.set_velocity(0.0,INIT_SPEED);
 
@@ -137,24 +159,18 @@ void Home_sequenz()
             ThisThread::sleep_for(100ms);
             Stabilisierungsplattform.reset();
             ThisThread::sleep_for(100ms);
-            process = y2;
+            Stabilisierungsplattform.set_position(0.0, 0.4,INIT_SPEED);
+            ThisThread::sleep_for(1000ms);
+            ThisThread::sleep_for(100ms);
+            Stabilisierungsplattform.reset();
+            ThisThread::sleep_for(100ms);
+            process = x;
+            
         }
         
         break;
         
-        case y2:
-
-
-        
-        ThisThread::sleep_for(100ms);
-
-        Stabilisierungsplattform.set_position(0.0,-1.0,INIT_SPEED);
-
-        ThisThread::sleep_for(200ms);
-
-        process = x;
-        
-        break;
+ 
 
         case x:
 
@@ -199,6 +215,11 @@ void StateMachine_task() {
             state = ERROR_MODE;
             stabilisierung = false;
         }
+        if(M1_temp > TEMP_THRESHOLD_EMERGENCY || M2_temp > TEMP_THRESHOLD_EMERGENCY)
+        {
+            state = ERROR_MODE;
+            stabilisierung = false;
+        }
 
         switch (state) {
 
@@ -235,7 +256,7 @@ void StateMachine_task() {
                 }
                 
                 state = CALIBRATION;
-                process = y1;
+                process = y;
 
                 break;
 
@@ -246,6 +267,7 @@ void StateMachine_task() {
                 
                 Home_sequenz();
 
+                
                 if (process == home && abs(Stabilisierungsplattform.get_position_mm(0) - POS_ZERO_X) <= 0.5f && abs(Stabilisierungsplattform.get_position_mm(1) - POS_ZERO_Y) <= 0.5f)
                 {
 
@@ -253,6 +275,7 @@ void StateMachine_task() {
                         ThisThread::sleep_for(2000ms);
                         Stabilisierungsplattform.reset();
                         Stabilisierungsplattform.set_position(0.0, 0.0, 1000.0);
+
                 
                     
                 }
@@ -261,13 +284,58 @@ void StateMachine_task() {
                 break;
 
             case RUN_MODE:
+
+                Stabilisierungsplattform.LED_Green = 1;
+                Stabilisierungsplattform.LED_Red = 0;
+
+                Stabilisierungsplattform.Motor1_EN = 1;
+                Stabilisierungsplattform.Motor2_EN = 1;
+
+                stabilisierung = true;
+
+
+                if(abs(ax_f-ax_f_old) <= 0.005 && abs(ay_f-ay_f_old) <= 0.005)
+                {
+                    cnt_stabilisierung_aus++;
+
+                    if(cnt_stabilisierung_aus >= 1000)
+                    {
+                        state = SLEEPMODE;
+                        cnt_stabilisierung_aus = 0;
+                    }
+
+                }
+                else 
+                {
+                    cnt_stabilisierung_aus = 0;
+                }
+
+                ax_f_old = ax_f;
+                ay_f_old = ay_f; 
+
                 
-               stabilisierung = true;
+                
                 
                 break;
             
             case SLEEPMODE:
-                // TODO: Warten auf Auslenkung
+                
+                stabilisierung = false;
+
+                Stabilisierungsplattform.LED_Green = 0;
+                Stabilisierungsplattform.LED_Red = 0;
+
+                
+                Stabilisierungsplattform.Motor1_EN = 0;
+                Stabilisierungsplattform.Motor2_EN = 0;
+
+                if(abs(ax_f-ax_f_old) >= 0.005 || abs(ay_f-ay_f_old) >= 0.005)
+                {
+                    state = RUN_MODE;
+                }
+
+                ax_f_old = ax_f;
+                ay_f_old = ay_f; 
              
                 break;
 
@@ -287,6 +355,9 @@ void StateMachine_task() {
                 {
                     state = SELFTEST;
                 }
+
+ 
+
             break;
                 
         }
@@ -303,11 +374,17 @@ void print_task() {
 
         printf("######################\n");
         //printf("Uin = %f\n", Stabilisierungsplattform.get_Uin());
-        printf("AX = %f\n", Stabilisierungsplattform.get_IMU1_Ax());
-        printf("AY = %f\n", Stabilisierungsplattform.get_IMU1_Ay());
+        printf("AX = %f\n", ax_f);
+        printf("AY = %f\n", ay_f);
         printf("AZ = %f\n", Stabilisierungsplattform.get_IMU1_Az());
-        printf("t1 =  %f\n", Stabilisierungsplattform.M1_get_temperature());
-        printf("t2 =  %f\n", Stabilisierungsplattform.M2_get_temperature());
+
+        printf("AX_2 = %f\n", Stabilisierungsplattform.get_IMU2_Ax());
+        printf("AY_2 = %f\n", Stabilisierungsplattform.get_IMU2_Ay());
+        printf("AZ_2 = %f\n", Stabilisierungsplattform.get_IMU2_Az());
+
+
+        printf("t1 =  %f\n", M1_temp);
+        printf("t2 =  %f\n", M2_temp);
         printf("pos M1 = %f mm\n", Stabilisierungsplattform.M1_get_mm());
         printf("pos M2 = %f mm\n", Stabilisierungsplattform.M2_get_mm());
         printf("pos X = %f mm\n", Stabilisierungsplattform.get_position_mm(0));
@@ -321,6 +398,7 @@ void print_task() {
         //printf("vr M2 = %f r/s\n", Stabilisierungsplattform.M2_get_revolutions_s());
         printf("U M1 = %f V\n", Stabilisierungsplattform.Spannung_M1);
         printf("U M2 = %f V\n", Stabilisierungsplattform.Spannung_M2);
+        printf("Timer = %d\n ",cnt_stabilisierung_aus);
         printf("######################\n");
 
         ThisThread::sleep_for(500ms);
@@ -336,20 +414,17 @@ int main() {
     Filter_X.setFrequency(7.0);
     
 
-    print_thread.start(print_task);
-    //temperatur_thread.start(temperature_task);
-    realtime_thread.start(realtime_task);
+    Filter_T1.setPeriod(TS_Temp);
+    Filter_T2.setPeriod(TS_Temp);
+    Filter_T1.setFrequency(1.0);
+    Filter_T2.setFrequency(1.0);
 
+
+    print_thread.start(print_task);
+    temperatur_thread.start(temperature_task);
+    realtime_thread.start(realtime_task);
     statemachine_thread.start(StateMachine_task);
 
-    //Stabilisierungsplattform.Motor1_EN = 1;
-    //Stabilisierungsplattform.Motor2_EN = 1;
-
-
-
-    //Stabilisierungsplattform.M1_set_U(-24.0);
-    //Stabilisierungsplattform.M2_set_U(24.0);
-    // Hauptthread tut nichts mehr, bleibt aktiv
     while (true) {
         
 

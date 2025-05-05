@@ -81,35 +81,6 @@ EncoderCounter::EncoderCounter(PinName a, PinName b, PinName I,float gear, float
 EncoderCounter::~EncoderCounter() {}
 
 
-
-/*
-
-void EncoderCounter::update() {
-
-        counter_val = TIM->CNT;
-        delta = (int16_t)((counter_val - counter_val_old + 32768) % 65536 - 32768);
-
-
-
-        rotation_s = delta / (ts * gear * 4 * TICKS_PER_REVOLUTION);  // ggf. *2 oder *4, je nach Auflösung
-        
-        rotation += rotation_s * ts;
-
-        rad_s = rotation_s * (2* PI);
-
-        rad += rad_s * ts;
-
-
-        counter_val_old = counter_val;
-
-    
-}
-
-*/
-
-
-
-
 void EncoderCounter::update() {
     counter_val = TIM->CNT;
 

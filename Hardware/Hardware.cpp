@@ -62,9 +62,9 @@ Hardware::~Hardware() {
     // Aufräumarbeiten falls nötig
 }
 
-void Hardware::update() 
+void Hardware::update_1() 
 {
-    // Sensoren aktualisieren
+     // Sensoren aktualisieren
     EN2.update();
     EN1.update();
     
@@ -74,6 +74,11 @@ void Hardware::update()
     // Akkuspannung lesen
     Uin = Akku.get_input_voltage();
 
+}
+
+void Hardware::update_2() 
+{
+   
     // --- Positionsregelung (Außenregelkreis) ---
     // Positionssollwert ist z.B. position_M1 (definierst du woanders)
 
@@ -324,27 +329,27 @@ float Hardware::get_IMU1_gyro_z() {
 
 float Hardware::get_IMU2_Ax() {
 
-    return imu_1.get_AccelerationX();
+    return imu_2.get_AccelerationX();
 }
 float Hardware::get_IMU2_Ay() {
 
-    return imu_1.get_AccelerationY();
+    return imu_2.get_AccelerationY();
 }
 float Hardware::get_IMU2_Az() {
 
-    return imu_1.get_AccelerationZ();
+    return imu_2.get_AccelerationZ();
 }
 
 float Hardware::get_IMU2_gyro_x() {
 
-    return imu_1.get_AccelerationX();
+    return imu_2.get_AccelerationX();
 }
 float Hardware::get_IMU2_gyro_y() {
 
-    return imu_1.get_AccelerationY();
+    return imu_2.get_AccelerationY();
 }
 float Hardware::get_IMU2_gyro_z() {
 
-    return imu_1.get_AccelerationZ();
+    return imu_2.get_AccelerationZ();
 }
 

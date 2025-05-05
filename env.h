@@ -3,6 +3,9 @@
 #define TS 0.005f 
 #define TS_thread 5ms  // Encoder-Abtastzeit
 
+#define TS_Temp 0.05f
+#define TS_thread_Temp 50ms
+
 
 #define PWMFREQUENZ 50000
 
@@ -14,9 +17,9 @@
 #define D_PULLEY 14.55
 
 
-#define TEMP_THRESHOLD_O 50.0f
+#define TEMP_THRESHOLD_O 45.0f
 #define TEMP_THRESHOLD_U 40.0f
-#define TEMP_THRESHOLD_EMERGENCY 80.0f
+#define TEMP_THRESHOLD_EMERGENCY 60.0f
 
 
 #define ACCELERATION_THRESHOLD_XY 1.5 
@@ -54,7 +57,7 @@
 #define M2_P_KD 0.0
 
 #define INIT_SPEED 15.0f
-#define POS_ZERO_X 61.50
+#define POS_ZERO_X 51.80f
 #define POS_ZERO_Y -65.188
 
 
