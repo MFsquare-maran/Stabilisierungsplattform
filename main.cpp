@@ -11,8 +11,12 @@ BufferedSerial pc(USBTX, USBRX, 115200);  // USB-Serielle Schnittstelle
 Hardware Stabilisierungsplattform(TS);
 
 
-LowpassFilter Filter_X;
-LowpassFilter Filter_Y;
+LowpassFilter Filter_IMU1_X;
+LowpassFilter Filter_IMU1_Y;
+LowpassFilter Filter_IMU1_Z;
+LowpassFilter Filter_IMU2_X;
+LowpassFilter Filter_IMU2_Y;
+LowpassFilter Filter_IMU2_Z;
 LowpassFilter Filter_T1;
 LowpassFilter Filter_T2;
 
@@ -49,10 +53,16 @@ bool stabilisierung = false;
 float M1_temp = 0.0;
 float M2_temp = 0.0;
 
-float ax_f = 0.0;
-float ay_f = 0.0;
-float ax_f_old = 0.0;
-float ay_f_old = 0.0;
+float ax_IMU1_f = 0.0;
+float ay_IMU1_f = 0.0;
+float az_IMU1_f = 0.0;
+
+float ax_IMU2_f = 0.0;
+float ay_IMU2_f = 0.0;
+float az_IMU2_f = 0.0;
+
+float ax_IMU1_f_old = 0.0;
+float ay_IMU1_f_old = 0.0;
 
 uint32_t cnt_stabilisierung_aus = 0;
 
@@ -118,13 +128,19 @@ void realtime_task() {
             Stabilisierungsplattform.update_2();
         }
 
-        ax_f = Filter_X.filter(Stabilisierungsplattform.get_IMU1_Ax());
-        ay_f = Filter_Y.filter(Stabilisierungsplattform.get_IMU1_Ay());
+        ax_IMU1_f = Filter_IMU1_X.filter(Stabilisierungsplattform.get_IMU1_Ax()-OFFSET_IMU1_X);
+        ay_IMU1_f = Filter_IMU1_Y.filter(Stabilisierungsplattform.get_IMU1_Ay()-OFFSET_IMU1_Y);
+        az_IMU1_f = Filter_IMU1_Z.filter(Stabilisierungsplattform.get_IMU1_Az()-OFFSET_IMU1_Z);
+
+        ax_IMU2_f = Filter_IMU2_X.filter(Stabilisierungsplattform.get_IMU2_Ax()-OFFSET_IMU2_X);
+        ay_IMU2_f = Filter_IMU2_Y.filter(Stabilisierungsplattform.get_IMU2_Ay()-OFFSET_IMU2_Y);
+        az_IMU2_f = Filter_IMU2_Z.filter(Stabilisierungsplattform.get_IMU2_Az()-OFFSET_IMU2_Z);
+
 
         if( stabilisierung == true )
         {
-            float phi_x = atan(ax_f / 9.81);
-            float phi_y = atan(ay_f / 9.81);
+            float phi_x = atan(ax_IMU1_f / 9.81);
+            float phi_y = atan(ay_IMU1_f / 9.81);
 
             float pos_x = R_S * sin(phi_x);
             float pos_y = R_S * sin(phi_y);
@@ -267,7 +283,7 @@ void StateMachine_task() {
                 
                 Home_sequenz();
 
-                
+                /*
                 if (process == home && abs(Stabilisierungsplattform.get_position_mm(0) - POS_ZERO_X) <= 0.5f && abs(Stabilisierungsplattform.get_position_mm(1) - POS_ZERO_Y) <= 0.5f)
                 {
 
@@ -280,7 +296,7 @@ void StateMachine_task() {
                     
                 }
 
-                
+                */
                 break;
 
             case RUN_MODE:
@@ -294,7 +310,7 @@ void StateMachine_task() {
                 stabilisierung = true;
 
 
-                if(abs(ax_f-ax_f_old) <= 0.005 && abs(ay_f-ay_f_old) <= 0.005)
+                if(abs(ax_IMU1_f-ax_IMU1_f_old) <= 0.005 && abs(ay_IMU1_f-ay_IMU1_f_old) <= 0.005)
                 {
                     cnt_stabilisierung_aus++;
 
@@ -310,8 +326,8 @@ void StateMachine_task() {
                     cnt_stabilisierung_aus = 0;
                 }
 
-                ax_f_old = ax_f;
-                ay_f_old = ay_f; 
+                ax_IMU1_f_old = ax_IMU1_f;
+                ay_IMU1_f_old = ay_IMU1_f; 
 
                 
                 
@@ -329,13 +345,13 @@ void StateMachine_task() {
                 Stabilisierungsplattform.Motor1_EN = 0;
                 Stabilisierungsplattform.Motor2_EN = 0;
 
-                if(abs(ax_f-ax_f_old) >= 0.005 || abs(ay_f-ay_f_old) >= 0.005)
+                if(abs(ax_IMU1_f-ax_IMU1_f_old) >= 0.005 || abs(ay_IMU1_f-ay_IMU1_f_old) >= 0.005)
                 {
                     state = RUN_MODE;
                 }
 
-                ax_f_old = ax_f;
-                ay_f_old = ay_f; 
+                ax_IMU1_f_old = ax_IMU1_f;
+                ay_IMU1_f_old = ay_IMU1_f; 
              
                 break;
 
@@ -374,14 +390,15 @@ void print_task() {
 
         printf("######################\n");
         //printf("Uin = %f\n", Stabilisierungsplattform.get_Uin());
-        printf("AX = %f\n", ax_f);
-        printf("AY = %f\n", ay_f);
-        printf("AZ = %f\n", Stabilisierungsplattform.get_IMU1_Az());
-
-        printf("AX_2 = %f\n", Stabilisierungsplattform.get_IMU2_Ax());
-        printf("AY_2 = %f\n", Stabilisierungsplattform.get_IMU2_Ay());
-        printf("AZ_2 = %f\n", Stabilisierungsplattform.get_IMU2_Az());
-
+        printf("AX = %f\n", ax_IMU1_f);
+        printf("AY = %f\n", ay_IMU1_f);
+        printf("AZ = %f\n", az_IMU1_f);
+        printf("######################\n");
+        printf("AX_2 = %f\n", ax_IMU2_f);
+        printf("AY_2 = %f\n", ay_IMU2_f);
+        printf("AZ_2 = %f\n", az_IMU2_f);
+        printf("######################\n");
+/*      
 
         printf("t1 =  %f\n", M1_temp);
         printf("t2 =  %f\n", M2_temp);
@@ -401,6 +418,8 @@ void print_task() {
         printf("Timer = %d\n ",cnt_stabilisierung_aus);
         printf("######################\n");
 
+        */
+
         ThisThread::sleep_for(500ms);
     }
 }
@@ -408,10 +427,21 @@ void print_task() {
 int main() {
     // Threads starten
     
-    Filter_Y.setPeriod(TS);
-    Filter_X.setPeriod(TS);
-    Filter_Y.setFrequency(7.0);
-    Filter_X.setFrequency(7.0);
+    Filter_IMU1_X.setPeriod(TS);
+    Filter_IMU1_Y.setPeriod(TS);
+    Filter_IMU1_Z.setPeriod(TS);
+
+    Filter_IMU1_X.setFrequency(7.0);
+    Filter_IMU1_Y.setFrequency(7.0);
+    Filter_IMU1_Z.setFrequency(7.0);
+
+    Filter_IMU2_X.setPeriod(TS);
+    Filter_IMU2_Y.setPeriod(TS);
+    Filter_IMU2_Z.setPeriod(TS);
+
+    Filter_IMU2_X.setFrequency(7.0);
+    Filter_IMU2_Y.setFrequency(7.0);
+    Filter_IMU2_Z.setFrequency(7.0);
     
 
     Filter_T1.setPeriod(TS_Temp);

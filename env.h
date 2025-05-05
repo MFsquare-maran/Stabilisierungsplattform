@@ -10,6 +10,20 @@
 #define PWMFREQUENZ 50000
 
 
+
+
+
+#define OFFSET_IMU1_X 0.074191
+#define OFFSET_IMU1_Y -0.075453
+#define OFFSET_IMU1_Z 0.201874
+
+
+
+#define OFFSET_IMU2_X -0.205112
+#define OFFSET_IMU2_Y 0.073742
+#define OFFSET_IMU2_Z 0.182435
+
+
 #define PI 3.14159265359 
 #define GEAR_1 15.5833
 #define GEAR_2 15.5844
@@ -57,8 +71,8 @@
 #define M2_P_KD 0.0
 
 #define INIT_SPEED 15.0f
-#define POS_ZERO_X 51.80f
-#define POS_ZERO_Y -65.188
+#define POS_ZERO_X 47.8f
+#define POS_ZERO_Y -66.188
 
 
 #define X_MAX 55
