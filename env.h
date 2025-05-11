@@ -10,6 +10,7 @@
 #define PWMFREQUENZ 50000
 
 
+#define CNT_SLEEP_MODE 300
 
 
 
@@ -31,8 +32,8 @@
 #define D_PULLEY 14.55
 
 
-#define TEMP_THRESHOLD_O 45.0f
-#define TEMP_THRESHOLD_U 40.0f
+#define TEMP_THRESHOLD_O 35.0f
+#define TEMP_THRESHOLD_U 30.0f
 #define TEMP_THRESHOLD_EMERGENCY 60.0f
 
 
@@ -45,7 +46,10 @@
 #define TICKS_PER_REVOLUTION 1024
 
 
-#define MIN_VOLTAGE 11.0
+#define MIN_VOLTAGE 20.0
+
+#define PLOT_FILTER 12.0
+#define Filter_IMU 5.0
 
 
 //M1
@@ -56,7 +60,7 @@
 
 // position_controller;
 #define M1_P_KP 50.0
-#define M1_P_KI 0
+#define M1_P_KI 0.0
 #define M1_P_KD 0.0
 
 //M2

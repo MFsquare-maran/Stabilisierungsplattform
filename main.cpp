@@ -17,6 +17,16 @@ LowpassFilter Filter_IMU1_Z;
 LowpassFilter Filter_IMU2_X;
 LowpassFilter Filter_IMU2_Y;
 LowpassFilter Filter_IMU2_Z;
+
+
+LowpassFilter Filter_IMU1_X_Plot;
+LowpassFilter Filter_IMU1_Y_Plot;
+LowpassFilter Filter_IMU1_Z_Plot;
+LowpassFilter Filter_IMU2_X_Plot;
+LowpassFilter Filter_IMU2_Y_Plot;
+LowpassFilter Filter_IMU2_Z_Plot;
+
+
 LowpassFilter Filter_T1;
 LowpassFilter Filter_T2;
 
@@ -43,8 +53,8 @@ Process process;
 
 // Thread-Objekte
 Thread realtime_thread(200);
-Thread print_thread(osPriorityLow);
-Thread statemachine_thread(osPriorityNormal);
+Thread print_thread(osPriorityNormal);
+Thread statemachine_thread(osPriorityHigh);
 Thread temperatur_thread(osPriorityNormal);
 
 
@@ -52,6 +62,9 @@ bool stabilisierung = false;
 
 float M1_temp = 0.0;
 float M2_temp = 0.0;
+
+
+
 
 float ax_IMU1_f = 0.0;
 float ay_IMU1_f = 0.0;
@@ -61,19 +74,49 @@ float ax_IMU2_f = 0.0;
 float ay_IMU2_f = 0.0;
 float az_IMU2_f = 0.0;
 
+float ax_IMU1_f1 = 0.0;
+float ay_IMU1_f1 = 0.0;
+float az_IMU1_f1 = 0.0;
+
+float ax_IMU2_f1 = 0.0;
+float ay_IMU2_f1 = 0.0;
+float az_IMU2_f1 = 0.0;
+
 float ax_IMU1_f_old = 0.0;
 float ay_IMU1_f_old = 0.0;
 
 uint32_t cnt_stabilisierung_aus = 0;
+
+
+
+float X_soll = 0.0;
+float Y_soll = 0.0;
+
+
+
+
+DigitalIn userButton(PC_13); // interner PullUp meist aktiv
+
+bool detectFallingEdge()
+{
+    static bool lastState = true; // Taster ist nicht gedrückt bei Start (High)
+    bool currentState = userButton.read();
+
+    bool fallingEdge = (lastState == true && currentState == false);
+    lastState = currentState;
+    return fallingEdge;
+}
+
+
 
 void temperature_task()
 {
     while(true)
     {
 
-        M1_temp =  Filter_T1.filter(Stabilisierungsplattform.M1_get_temperature()); 
+        M1_temp =  Filter_T1.filter(Stabilisierungsplattform.M1_get_temperature()-8.685); 
 
-        M2_temp =  Filter_T2.filter(Stabilisierungsplattform.M2_get_temperature());
+        M2_temp =  Filter_T2.filter(Stabilisierungsplattform.M2_get_temperature()-0.727);
 
         
 
@@ -89,7 +132,7 @@ void temperature_task()
             
         }
 
-    if(M2_temp > TEMP_THRESHOLD_O)
+        if(M2_temp > TEMP_THRESHOLD_O)
         {
             Stabilisierungsplattform.Fan_M2 = 1;
             
@@ -102,9 +145,16 @@ void temperature_task()
         }
 
     
+        /*
+        if (detectFallingEdge()) 
+        {
 
+            Stabilisierungsplattform.Fan_M1 = !Stabilisierungsplattform.Fan_M1;
+            Stabilisierungsplattform.Fan_M2 = !Stabilisierungsplattform.Fan_M2;
 
-        
+        }
+*/
+
         ThisThread::sleep_for(TS_thread_Temp);
 
     }
@@ -127,6 +177,15 @@ void realtime_task() {
         {
             Stabilisierungsplattform.update_2();
         }
+
+
+        ax_IMU1_f1 = Filter_IMU1_X_Plot.filter(Stabilisierungsplattform.get_IMU1_Ax()-OFFSET_IMU1_X);
+        ay_IMU1_f1 = Filter_IMU1_Y_Plot.filter(Stabilisierungsplattform.get_IMU1_Ay()-OFFSET_IMU1_Y);
+        az_IMU1_f1 = Filter_IMU1_Z_Plot.filter(Stabilisierungsplattform.get_IMU1_Az()-OFFSET_IMU1_Z);
+
+        ax_IMU2_f1 = Filter_IMU2_X_Plot.filter(Stabilisierungsplattform.get_IMU2_Ax()-OFFSET_IMU2_X);
+        ay_IMU2_f1 = Filter_IMU2_Y_Plot.filter(Stabilisierungsplattform.get_IMU2_Ay()-OFFSET_IMU2_Y);
+        az_IMU2_f1 = Filter_IMU2_Z_Plot.filter(Stabilisierungsplattform.get_IMU2_Az()-OFFSET_IMU2_Z);
 
         ax_IMU1_f = Filter_IMU1_X.filter(Stabilisierungsplattform.get_IMU1_Ax()-OFFSET_IMU1_X);
         ay_IMU1_f = Filter_IMU1_Y.filter(Stabilisierungsplattform.get_IMU1_Ay()-OFFSET_IMU1_Y);
@@ -281,7 +340,7 @@ void StateMachine_task() {
                 Stabilisierungsplattform.Motor1_EN = 1;
                 Stabilisierungsplattform.Motor2_EN = 1;
                 
-                Home_sequenz();
+               Home_sequenz();
 
                 
                 if (process == home && abs(Stabilisierungsplattform.get_position_mm(0) - POS_ZERO_X) <= 0.5f && abs(Stabilisierungsplattform.get_position_mm(1) - POS_ZERO_Y) <= 0.5f)
@@ -307,14 +366,34 @@ void StateMachine_task() {
                 Stabilisierungsplattform.Motor1_EN = 1;
                 Stabilisierungsplattform.Motor2_EN = 1;
 
+                /*
+
+                X_soll = -50.0;
+                Y_soll = 0.0;
+
+                Stabilisierungsplattform.set_position(X_soll, Y_soll,1000.0);
+
+
+                ThisThread::sleep_for(2000ms);
+                
+                X_soll = 50.0;
+                Y_soll = 0.0;
+
+                Stabilisierungsplattform.set_position(X_soll, Y_soll,1000.0);
+
+                ThisThread::sleep_for(2000ms);
+
+*/
+                
+
                 stabilisierung = true;
 
 
-                if(abs(ax_IMU1_f-ax_IMU1_f_old) <= 0.005 && abs(ay_IMU1_f-ay_IMU1_f_old) <= 0.005)
+                if(abs(ax_IMU1_f1-ax_IMU1_f_old) <= 0.005 && abs(ay_IMU1_f1-ay_IMU1_f_old) <= 0.005)
                 {
                     cnt_stabilisierung_aus++;
 
-                    if(cnt_stabilisierung_aus >= 1000)
+                    if(cnt_stabilisierung_aus >= CNT_SLEEP_MODE)
                     {
                         state = SLEEPMODE;
                         cnt_stabilisierung_aus = 0;
@@ -326,8 +405,8 @@ void StateMachine_task() {
                     cnt_stabilisierung_aus = 0;
                 }
 
-                ax_IMU1_f_old = ax_IMU1_f;
-                ay_IMU1_f_old = ay_IMU1_f; 
+                ax_IMU1_f_old = ax_IMU1_f1;
+                ay_IMU1_f_old = ay_IMU1_f1; 
 
                 
                 
@@ -345,13 +424,13 @@ void StateMachine_task() {
                 Stabilisierungsplattform.Motor1_EN = 0;
                 Stabilisierungsplattform.Motor2_EN = 0;
 
-                if(abs(ax_IMU1_f-ax_IMU1_f_old) >= 0.005 || abs(ay_IMU1_f-ay_IMU1_f_old) >= 0.005)
+                if(abs(ax_IMU1_f1-ax_IMU1_f_old) >= 0.005 || abs(ay_IMU1_f1-ay_IMU1_f_old) >= 0.005)
                 {
                     state = RUN_MODE;
                 }
 
-                ax_IMU1_f_old = ax_IMU1_f;
-                ay_IMU1_f_old = ay_IMU1_f; 
+                ax_IMU1_f_old = ax_IMU1_f1;
+                ay_IMU1_f_old = ay_IMU1_f1; 
              
                 break;
 
@@ -388,20 +467,19 @@ void StateMachine_task() {
 void print_task() {
     while (true) {
 
-        printf("######################\n");
-        //printf("Uin = %f\n", Stabilisierungsplattform.get_Uin());
-        printf("AX = %f\n", ax_IMU1_f);
-        printf("AY = %f\n", ay_IMU1_f);
-        printf("AZ = %f\n", az_IMU1_f);
-        printf("######################\n");
-        printf("AX_2 = %f\n", ax_IMU2_f);
-        printf("AY_2 = %f\n", ay_IMU2_f);
-        printf("AZ_2 = %f\n", az_IMU2_f);
-        printf("######################\n");
     
+        // Print Temp
+        //printf("t1:%f t2:%f\n", M1_temp,M2_temp);
 
-        printf("t1 =  %f\n", M1_temp);
-        printf("t2 =  %f\n", M2_temp);
+        //Print Beschleunigungen
+        printf("ax1:%f ay1:%f az1:%f ax2:%f ay2:%f az2:%f \n",ax_IMU1_f1,ay_IMU1_f1,az_IMU1_f1,ax_IMU2_f1,-ay_IMU2_f1,-az_IMU2_f1);
+
+
+        //Print Position
+        //printf("X_soll:%f Y_soll:%f X_ist:%f Y_ist:%f\n",X_soll,Y_soll,Stabilisierungsplattform.get_position_mm(0),Stabilisierungsplattform.get_position_mm(1));
+
+
+        
 /*  
         printf("pos M1 = %f mm\n", Stabilisierungsplattform.M1_get_mm());
         printf("pos M2 = %f mm\n", Stabilisierungsplattform.M2_get_mm());
@@ -421,7 +499,7 @@ void print_task() {
 
         */
 
-        ThisThread::sleep_for(500ms);
+        ThisThread::sleep_for(5ms);
     }
 }
 
@@ -432,17 +510,35 @@ int main() {
     Filter_IMU1_Y.setPeriod(TS);
     Filter_IMU1_Z.setPeriod(TS);
 
-    Filter_IMU1_X.setFrequency(7.0);
-    Filter_IMU1_Y.setFrequency(7.0);
-    Filter_IMU1_Z.setFrequency(7.0);
+    Filter_IMU1_X.setFrequency(Filter_IMU);
+    Filter_IMU1_Y.setFrequency(Filter_IMU);
+    Filter_IMU1_Z.setFrequency(Filter_IMU);
 
     Filter_IMU2_X.setPeriod(TS);
     Filter_IMU2_Y.setPeriod(TS);
     Filter_IMU2_Z.setPeriod(TS);
 
-    Filter_IMU2_X.setFrequency(7.0);
-    Filter_IMU2_Y.setFrequency(7.0);
-    Filter_IMU2_Z.setFrequency(7.0);
+    Filter_IMU2_X.setFrequency(Filter_IMU);
+    Filter_IMU2_Y.setFrequency(Filter_IMU);
+    Filter_IMU2_Z.setFrequency(Filter_IMU);
+
+
+
+    Filter_IMU1_X_Plot.setPeriod(TS);
+    Filter_IMU1_Y_Plot.setPeriod(TS);
+    Filter_IMU1_Z_Plot.setPeriod(TS);
+
+    Filter_IMU1_X_Plot.setFrequency(PLOT_FILTER);
+    Filter_IMU1_Y_Plot.setFrequency(PLOT_FILTER);
+    Filter_IMU1_Z_Plot.setFrequency(PLOT_FILTER);
+
+    Filter_IMU2_X_Plot.setPeriod(TS);
+    Filter_IMU2_Y_Plot.setPeriod(TS);
+    Filter_IMU2_Z_Plot.setPeriod(TS);
+
+    Filter_IMU2_X_Plot.setFrequency(PLOT_FILTER);
+    Filter_IMU2_Y_Plot.setFrequency(PLOT_FILTER);
+    Filter_IMU2_Z_Plot.setFrequency(PLOT_FILTER);
     
 
     Filter_T1.setPeriod(TS_Temp);
@@ -451,7 +547,7 @@ int main() {
     Filter_T2.setFrequency(1.0);
 
 
-    print_thread.start(print_task);
+    //print_thread.start(print_task);
     temperatur_thread.start(temperature_task);
     realtime_thread.start(realtime_task);
     statemachine_thread.start(StateMachine_task);
@@ -479,8 +575,10 @@ int main() {
         ThisThread::sleep_for(2000ms);
 
         Stabilisierungsplattform.set_position(0.0, 0.0, 60.0);
+        
 */
-        ThisThread::sleep_for(2000ms);
+        printf("ax1:%f ay1:%f az1:%f ax2:%f ay2:%f az2:%f \n",ax_IMU1_f1,ay_IMU1_f1,az_IMU1_f1,ax_IMU2_f1,-ay_IMU2_f1,-az_IMU2_f1);
+        ThisThread::sleep_for(5ms);
 
 
 
