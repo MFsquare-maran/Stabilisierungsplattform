@@ -54,23 +54,23 @@
 
 //M1
 // velocity_controller;
-#define M1_V_KP 0.51254
-#define M1_V_KI 5.0451
-#define M1_V_KD 0.0
+#define M1_V_KP 0.41236//0.51254
+#define M1_V_KI 7.2902//5.0451
+#define M1_V_KD 0.00026581
 
 // position_controller;
-#define M1_P_KP 50.0
+#define M1_P_KP 100.0//50.0
 #define M1_P_KI 0.0
 #define M1_P_KD 0.0
 
 //M2
 // velocity_controller;
-#define M2_V_KP 0.51254
-#define M2_V_KI 5.0451
-#define M2_V_KD 0.0
+#define M2_V_KP 0.41236
+#define M2_V_KI 7.2902
+#define M2_V_KD 0.00026581
 
 // position_controller;
-#define M2_P_KP 50.0
+#define M2_P_KP 100.0
 #define M2_P_KI 0.0
 #define M2_P_KD 0.0
 

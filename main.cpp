@@ -367,8 +367,7 @@ void StateMachine_task() {
                 Stabilisierungsplattform.Motor2_EN = 1;
 
                 /*
-
-                X_soll = -50.0;
+                X_soll = -40.0;
                 Y_soll = 0.0;
 
                 Stabilisierungsplattform.set_position(X_soll, Y_soll,1000.0);
@@ -376,15 +375,15 @@ void StateMachine_task() {
 
                 ThisThread::sleep_for(2000ms);
                 
-                X_soll = 50.0;
+                X_soll = 40.0;
                 Y_soll = 0.0;
 
                 Stabilisierungsplattform.set_position(X_soll, Y_soll,1000.0);
 
                 ThisThread::sleep_for(2000ms);
 
-*/
-                
+
+                */
 
                 stabilisierung = true;
 
@@ -409,7 +408,7 @@ void StateMachine_task() {
                 ay_IMU1_f_old = ay_IMU1_f1; 
 
                 
-                
+              
                 
                 break;
             
@@ -472,7 +471,7 @@ void print_task() {
         //printf("t1:%f t2:%f\n", M1_temp,M2_temp);
 
         //Print Beschleunigungen
-        printf("ax1:%f ay1:%f az1:%f ax2:%f ay2:%f az2:%f \n",ax_IMU1_f1,ay_IMU1_f1,az_IMU1_f1,ax_IMU2_f1,-ay_IMU2_f1,-az_IMU2_f1);
+        //printf("ax1:%f ay1:%f az1:%f ax2:%f ay2:%f az2:%f \n",ax_IMU1_f1,ay_IMU1_f1,az_IMU1_f1,ax_IMU2_f1,-ay_IMU2_f1,-az_IMU2_f1);
 
 
         //Print Position
@@ -577,8 +576,10 @@ int main() {
         Stabilisierungsplattform.set_position(0.0, 0.0, 60.0);
         
 */
-        printf("ax1:%f ay1:%f az1:%f ax2:%f ay2:%f az2:%f \n",ax_IMU1_f1,ay_IMU1_f1,az_IMU1_f1,ax_IMU2_f1,-ay_IMU2_f1,-az_IMU2_f1);
-        ThisThread::sleep_for(5ms);
+        //printf("ax1:%f ay1:%f az1:%f ax2:%f ay2:%f az2:%f \n",ax_IMU1_f1,ay_IMU1_f1,az_IMU1_f1,ax_IMU2_f1,-ay_IMU2_f1,-az_IMU2_f1);
+        
+        printf("X_soll:%f Y_soll:%f X_ist:%f Y_ist:%f\n",X_soll,Y_soll,Stabilisierungsplattform.get_position_mm(0),Stabilisierungsplattform.get_position_mm(1));
+        ThisThread::sleep_for(10ms);
 
 
 
