@@ -7,32 +7,34 @@
 #ifndef LOWPASS_FILTER_H_
 #define LOWPASS_FILTER_H_
 
-#include <cstdlib>
+#include <vector>
 
 /**
- * This class implements a time-discrete 2nd order lowpass filter for a series of data values.
- * This filter can typically be used within a periodic task that takes measurements that need
- * to be filtered, like speed or position values.
+ * This class implements a time-discrete lowpass filter of configurable order.
+ * The filter is implemented as a cascade of first-order filters and can be used
+ * within a periodic task that filters measured values like speed or position.
  */
 class LowpassFilter {
     
     public:
-    
-                LowpassFilter();
+        LowpassFilter(unsigned int order = 1);
         virtual ~LowpassFilter();
-        void    reset();
-        void    reset(float value);
-        void    setPeriod(float period);
-        void    setFrequency(float frequency);
-        float   getFrequency();
-        float   filter(float value);
-        
+
+        void  reset();
+        void  reset(float value);
+        void  setPeriod(float period);
+        void  setFrequency(float frequency);
+        float getFrequency();
+        float filter(float value);
+
     private:
-        
-        float   period;
-        float   frequency;
-        float   a11, a12, a21, a22, b1, b2;
-        float   x1, x2;
+        void computeAlpha();
+
+        float period;
+        float frequency;
+        float alpha;
+        unsigned int order;
+        std::vector<float> x;
 };
 
 #endif /* LOWPASS_FILTER_H_ */
